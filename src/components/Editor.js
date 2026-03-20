@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import React, { useEffect, useRef } from 'react';
 import Codemirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
@@ -9,8 +10,7 @@ import ACTIONS from '../Actions';
 
 const Editor = ({socketRef, roomId, canWrite = true, onCodeChange}) => {
   const editorRef = useRef(null);
-  const codeChangeHandlerRef = useRef(null);
-  
+
   useEffect(() =>{
     async function init(){
       editorRef.current = Codemirror.fromTextArea(
@@ -26,17 +26,12 @@ const Editor = ({socketRef, roomId, canWrite = true, onCodeChange}) => {
       );
 
       editorRef.current.on('change',(instance, changes)=>{
-        console.log('changes', changes);
         const {origin} = changes;
         const code = instance.getValue();
         onCodeChange(code);
         if(origin !== 'setValue' && socketRef.current && canWrite){
-          socketRef.current.emit(ACTIONS.CODE_CHANGE,{
-            roomId,
-            code,
-          });
+          socketRef.current.emit(ACTIONS.CODE_CHANGE,{ roomId, code });
         }
-        console.log(code);
       });
     }
     init();
@@ -48,34 +43,24 @@ const Editor = ({socketRef, roomId, canWrite = true, onCodeChange}) => {
     }
   }, [canWrite]);
 
-  // Set up code change listener when socket is available
   useEffect(() =>{
-    if(socketRef.current){
-      const handleCodeChange = ({code}) => {
-        // Wait for editor to be initialized
-        if(editorRef.current && code !== null && code !== undefined){
-          const currentCode = editorRef.current.getValue();
-          // Only update if code is different to avoid unnecessary updates
-          if(currentCode !== code){
-            editorRef.current.setValue(code);
-          }
-        }
-      };
-      
-      codeChangeHandlerRef.current = handleCodeChange;
-      socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
+    const socket = socketRef.current;
+    if(!socket) return;
 
-      return () => {
-        if(socketRef.current && codeChangeHandlerRef.current){
-          socketRef.current.off(ACTIONS.CODE_CHANGE, codeChangeHandlerRef.current);
+    const handleCodeChange = ({code}) => {
+      if(editorRef.current && code !== null && code !== undefined){
+        if(editorRef.current.getValue() !== code){
+          editorRef.current.setValue(code);
         }
-      };
-    }
-  },[socketRef.current]);
+      }
+    };
 
+    socket.on(ACTIONS.CODE_CHANGE, handleCodeChange);
+    return () => socket.off(ACTIONS.CODE_CHANGE, handleCodeChange);
+  },[]);
 
   return (
     <textarea id="realtimeEditor"></textarea>
-  )
+  );
 }
 export default Editor;

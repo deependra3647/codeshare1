@@ -9,7 +9,12 @@ const ACTIONS = require('./src/Actions');
 app.use(express.json());
 
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: process.env.FRONTEND_URL || '*',
+    methods: ['GET', 'POST'],
+  },
+});
 
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/codeshare';
 const MONGO_DB_NAME = process.env.MONGO_DB_NAME || 'codeshare';

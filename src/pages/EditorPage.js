@@ -130,6 +130,7 @@ const EditorPage=()=>{
       socketRef.current.off(ACTIONS.JOIN_REJECTED);
       socketRef.current.disconnect();
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function copyRoomId(){
